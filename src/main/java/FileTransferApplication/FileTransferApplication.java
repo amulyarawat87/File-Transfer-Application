@@ -1,4 +1,4 @@
-package com.fileTransfer.FileTransferApplication;
+package FileTransferApplication;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

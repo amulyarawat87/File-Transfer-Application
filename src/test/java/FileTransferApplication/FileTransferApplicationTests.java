@@ -1,4 +1,4 @@
-package com.fileTransfer.FileTransferApplication;
+package FileTransferApplication;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
