@@ -19,7 +19,7 @@ public class FileService {
     public MultipartFile downloadService(String url) {
         MultipartFile file = null;
         if(fileMetadataRepo.findById(url).isPresent()) {
-            FileMetadata  fileMetadata = fileMetadataRepo.findById(url).get();
+            FileMetadata fileMetadata = fileMetadataRepo.findById(url).get();
             if(fileMetadata.getExpiryDate() != null) {
                 //Logic to fetch file from blob storage
                 file = null;
