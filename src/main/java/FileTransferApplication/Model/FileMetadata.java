@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -15,8 +15,9 @@ import java.util.Date;
 @NoArgsConstructor
 public class FileMetadata {
     @Id
-    private String url;
-    private String name;
-    private String size;
-    private Date expiryDate;
+    private String fileId;
+    private String fileName;
+    private String filePath;
+    private long fileSize;
+    private LocalDateTime expiryDate;
 }
