@@ -1,12 +1,10 @@
 package FileTransferApplication.Service;
 
 import FileTransferApplication.Model.FileMetadata;
-import FileTransferApplication.Repository.FileMetadataRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.*;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
