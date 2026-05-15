@@ -29,7 +29,7 @@ public class FileService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-    private final byte expiryHours = 3;
+    private final long expiryHours = 24; // Files expire after 24 hours
 
     public String uploadService(MultipartFile file) throws IOException {
         String fileId = UUID.randomUUID().toString();
@@ -50,6 +50,10 @@ public class FileService {
 
         //Retrieving From Database
         FileMetadata file =  db.get(id);
+
+        if(file == null || file.getExpiryDateTime().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.notFound().build();
+        }
 
         // Probe content type from filename instead of just extension
         String contentType = Files.probeContentType(Path.of(file.getFileName()));
