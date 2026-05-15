@@ -26,3 +26,4 @@ release.properties
 .env.local
 .env.*.local
 *.log
+application-local.properties
