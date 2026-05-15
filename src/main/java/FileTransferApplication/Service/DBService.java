@@ -14,14 +14,14 @@ public class DBService {
     @Autowired
     private FileMetadataRepo fileMetadataRepo;
 
-    public void save(String fileId, String fileName, Path filePath, long fileSize, byte expiryHours){
+    public void save(String fileId, String fileName, String fileType, long fileSize, LocalDateTime expiryTime){
         FileMetadata fileMetadata = new FileMetadata();
 
         fileMetadata.setFileId(fileId);
         fileMetadata.setFileName(fileName);
+        fileMetadata.setFileType(fileType);
         fileMetadata.setFileSize(fileSize);
-        fileMetadata.setFilePath(filePath.toString());
-        fileMetadata.setExpiryDate(LocalDateTime.now().plusHours(expiryHours));
+        fileMetadata.setExpiryDateTime(expiryTime);
         fileMetadataRepo.save(fileMetadata);
 
         System.out.println("File Saved Successfully");

@@ -13,6 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -31,21 +33,17 @@ public class FileService {
     private final byte expiryHours = 3;
 
     public String uploadService(MultipartFile file) throws IOException {
-        String originalName = file.getOriginalFilename();
-        String extension = originalName.substring(originalName.lastIndexOf('.'));
         String fileId = UUID.randomUUID().toString();
-        String fileName = fileId + extension;
+        String fileName = file.getOriginalFilename();
+        String fileType = fileName.substring(fileName.lastIndexOf('.'));
         long fileSize = file.getSize();
-
-        Path filePath = Path.of(uploadDir)
-                .resolve(fileName);
-        Files.createDirectories(filePath.getParent());
+        LocalDateTime expiryTime = LocalDateTime.now().plusHours(expiryHours);
 
         //Logic to Store File in Blob Storage
         s3.uploadFile(file, fileId);
 
         //Saving to Database
-        db.save(fileId, fileName, filePath, fileSize, expiryHours);
+        db.save(fileId, fileName, fileType, fileSize, expiryTime);
 
         return fileId;
     }
@@ -54,13 +52,16 @@ public class FileService {
         //Retrieving From Database
         FileMetadata file =  db.get(id);
 
-
-        Path filePath = Path.of(file.getFilePath());
-        String contentType = Files.probeContentType(filePath);
+        // Probe content type from filename instead of just extension
+        String contentType = Files.probeContentType(Path.of(file.getFileName()));
         if (contentType == null) contentType = "application/octet-stream";
+
+        System.out.println("DEBUG: Downloading file - ID: " + id + ", FileName: " + file.getFileName() + ", ContentType: " + contentType);
 
         byte[] s3FileData = s3.downloadFile(id);
         ByteArrayResource resource = new ByteArrayResource(s3FileData);
+
+        System.out.println("DEBUG: Setting header - Content-Disposition: attachment; filename=\"" + file.getFileName() + "\"");
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))

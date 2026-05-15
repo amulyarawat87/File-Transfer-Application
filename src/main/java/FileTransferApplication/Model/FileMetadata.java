@@ -17,7 +17,7 @@ public class FileMetadata {
     @Id
     private String fileId;
     private String fileName;
-    private String filePath;
+    private String fileType;
     private long fileSize;
-    private LocalDateTime expiryDate;
+    private LocalDateTime expiryDateTime;
 }
