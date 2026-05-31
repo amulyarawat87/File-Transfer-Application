@@ -1,6 +1,7 @@
 package FileTransferApplication.Model;
 
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
@@ -20,4 +21,6 @@ public class FileMetadata {
     private String fileType;
     private long fileSize;
     private LocalDateTime expiryDateTime;
+    @Column(columnDefinition = "TEXT")
+    private String encryptionKey;
 }

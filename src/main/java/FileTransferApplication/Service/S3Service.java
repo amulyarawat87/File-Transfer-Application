@@ -11,8 +11,15 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.Arrays;
 
 @Service
 public class S3Service {
@@ -20,18 +27,21 @@ public class S3Service {
     @Autowired
     private S3Client s3Client;
 
+    @Autowired
+    private S3Presigner s3Presigner;
+
     @Value("${aws.bucket-name}")
     private String bucketName;
 
     // Upload
-    public boolean uploadFile(MultipartFile file, String key) throws IOException {
+    public boolean uploadFile(byte[] file, String key) throws IOException {
         s3Client.putObject(
                 PutObjectRequest.builder()
                         .bucket(bucketName)
                         .key(key)
-                        .contentType(file.getContentType())
+                        .contentType(Arrays.toString(file))
                         .build(),
-                RequestBody.fromBytes(file.getBytes())
+                RequestBody.fromBytes(file)
         );
 
         return true;
@@ -56,5 +66,33 @@ public class S3Service {
                         .key(key)
                         .build()
         );
+    }
+
+    // Generate presigned PUT (upload) URL
+    public String generatePresignedPutUrl(String key, Duration duration) {
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(duration)
+                .putObjectRequest(PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .build())
+                .build();
+
+        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+        return presignedRequest.url().toString();
+    }
+
+    // Generate presigned GET (download) URL
+    public String generatePresignedGetUrl(String key, Duration duration) {
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(duration)
+                .getObjectRequest(GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .build())
+                .build();
+
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+        return presignedRequest.url().toString();
     }
 }
