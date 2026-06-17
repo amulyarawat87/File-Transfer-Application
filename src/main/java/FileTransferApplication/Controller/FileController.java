@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
 @CrossOrigin(exposedHeaders = "Content-Disposition")
@@ -18,10 +19,9 @@ public class FileController {
     @Autowired
     private FileService fileService;
 
-    @GetMapping({"/download/{id}", "/s/{id}"})
-    public ResponseEntity<Resource> downloadFile(@PathVariable String id) throws IOException {
-        System.out.println("Downloading file Started..." + id);
-        return fileService.downloadService(id);
+    @GetMapping({"/download/{shortCode}", "/s/{shortCode}"})
+    public ResponseEntity<Resource> downloadFile(@PathVariable String shortCode) throws IOException {
+        return fileService.downloadService(shortCode);
     }
 
     @GetMapping("/upload/presigned-url")
@@ -31,9 +31,8 @@ public class FileController {
     }
 
     @PostMapping("/upload/confirm")
-    public ResponseEntity<java.util.Map<String, String>> confirmUpload(@RequestBody UploadConfirmationRequest request) {
-        String fileId = fileService.confirmUpload(request);
-        return ResponseEntity.ok(java.util.Map.of("fileId", fileId));
+    public ResponseEntity<Map<String, String>> confirmUpload(@RequestBody UploadConfirmationRequest request) {
+        String shortCode = fileService.confirmUpload(request);
+        return ResponseEntity.ok(Map.of("shortCode", shortCode)); // changed from fileId to shortCode
     }
-
 }

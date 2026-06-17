@@ -12,22 +12,23 @@ public class DBService {
     @Autowired
     private FileMetadataRepo fileMetadataRepo;
 
-    public void save(String fileId, String fileName, String fileType, long fileSize, LocalDateTime expiryTime, String encryptionKey){
+    public void save(String fileId, String fileName, String fileType, long fileSize, LocalDateTime expiryTime, String encryptionKey, String shortCode) {
         FileMetadata fileMetadata = new FileMetadata();
 
         fileMetadata.setFileId(fileId);
+        fileMetadata.setShortCode(shortCode);
         fileMetadata.setFileName(fileName);
         fileMetadata.setFileType(fileType);
         fileMetadata.setFileSize(fileSize);
         fileMetadata.setExpiryDateTime(expiryTime);
         fileMetadata.setEncryptionKey(encryptionKey);
+
         fileMetadataRepo.save(fileMetadata);
 
-        System.out.println("File Saved Successfully with Encryption Key");
+        System.out.println("File Saved Successfully - ShortCode: " + shortCode + ", FileId: " + fileId);
     }
 
-    public FileMetadata get(String id){
+    public FileMetadata get(String id) {
         return fileMetadataRepo.findById(id).orElseThrow(() -> new RuntimeException("File not found"));
     }
-
 }

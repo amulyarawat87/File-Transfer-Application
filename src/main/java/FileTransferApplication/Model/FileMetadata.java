@@ -1,6 +1,5 @@
 package FileTransferApplication.Model;
 
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -17,10 +16,15 @@ import java.time.LocalDateTime;
 public class FileMetadata {
     @Id
     private String fileId;
+
+    @Column(unique = true, nullable = false, length = 10)
+    private String shortCode;
+
     private String fileName;
     private String fileType;
     private long fileSize;
     private LocalDateTime expiryDateTime;
+
     @Column(columnDefinition = "TEXT")
     private String encryptionKey;
 }
