@@ -23,7 +23,8 @@ release.properties
 
 # Environment and properties
 .env
+.env.dev
+.env.prod
 .env.local
 .env.*.local
 *.log
-application.properties
