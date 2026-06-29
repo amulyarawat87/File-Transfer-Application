@@ -34,7 +34,7 @@ public class FileService {
     private FileMetadataRepo fileMetadataRepo;
 
     private final long expiryHours = 24;
-    private final long urlExpiryDurationMinutes = 10;
+    private final long urlExpiryDurationSeconds = 60;
 
     public ResponseEntity<Resource> downloadService(String shortCode) throws IOException {
 
@@ -69,7 +69,7 @@ public class FileService {
 
     public PresignedUrlResponse getPresignedUploadUrl() {
         String fileId = UUID.randomUUID().toString();
-        Duration urlExpiry = Duration.ofMinutes(urlExpiryDurationMinutes);
+        Duration urlExpiry = Duration.ofSeconds(urlExpiryDurationSeconds);
         String presignedUrl = s3.generatePresignedPutUrl(fileId, urlExpiry);
         return new PresignedUrlResponse(fileId, presignedUrl, urlExpiry.getSeconds());
     }
