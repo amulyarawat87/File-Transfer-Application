@@ -18,16 +18,14 @@ public class FileCleanupService {
     @Autowired
     private S3Service s3;
 
-    private final long schedulerHours = 1; // Run cleanup every hour
+    private final long schedulerHours = 1;
 
-    @Scheduled(fixedRate = schedulerHours * 60 * 60 * 1000) // Convert hours to milliseconds
+    @Scheduled(fixedRate = schedulerHours * 60 * 60 * 1000)
     public void deleteExpiredFiles(){
         List<FileMetadata> files= fileMetadataRepo.findAll();
 
         for(FileMetadata file: files){
-            System.out.println("File cleaned up Starting");
             if(file.getExpiryDateTime().isBefore(LocalDateTime.now())) {
-                System.out.println("File Removed" + file.toString());
                 s3.deleteFile(file.getFileId());
                 fileMetadataRepo.delete(file);
             }

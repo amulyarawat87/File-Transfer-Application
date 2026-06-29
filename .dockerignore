@@ -1,4 +1,5 @@
 .git
 .idea
 .vscode
-target/*.original
+target/*
+!target/*.jar
