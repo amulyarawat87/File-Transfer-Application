@@ -18,9 +18,9 @@ public class FileCleanupService {
     @Autowired
     private S3Service s3;
 
-    private final long schedulerHours = 0;
+    private final long schedulerHours = 1;
 
-    @Scheduled(fixedRate = schedulerHours * 60 * 60 * 1000)
+    @Scheduled(fixedRate = 60 * 1000)
     public void deleteExpiredFiles(){
         List<FileMetadata> files= fileMetadataRepo.findAll();
         System.out.println("DEBUG: Running scheduled cleanup task. Total files in DB: " + files.size());
