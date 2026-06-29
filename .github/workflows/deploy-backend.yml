@@ -18,6 +18,15 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
+            # Ensure PostgreSQL is running
+            sudo systemctl start postgresql
+            sudo systemctl enable postgresql
+            sudo systemctl status postgresql
+            
+            # Wait for PostgreSQL to be ready
+            sleep 5
+            
+            # Deploy backend
             cd /home/ec2-user/file-transfer-app/File-Transfer-Application
             git pull origin main
             export JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
