@@ -20,15 +20,14 @@ public class FileMetadata {
     @Id
     private String fileId;
 
-    // CODE REVIEW [Code Quality]: Column length is 10 but ShortCodeGenerator produces 6-char codes — align or document why.
-    @Column(unique = true, nullable = false, length = 10)
+    @Column(unique = true, nullable = false, length = 6)
     private String shortCode;
 
     private String fileName;
     private String fileType;
     private long fileSize;
-    // CODE REVIEW [Data Integrity]: No @Column(nullable=false) on expiryDateTime — null expiry bypasses cleanup and download checks.
     // CODE REVIEW [Best Practice]: Prefer Instant over LocalDateTime for server-side timestamps to avoid timezone drift.
+    @Column(nullable = false)
     private LocalDateTime expiryDateTime;
 
     // CODE REVIEW [Security]: Raw encryption key persisted in DB — high-value secret; encrypt column or use external KMS.

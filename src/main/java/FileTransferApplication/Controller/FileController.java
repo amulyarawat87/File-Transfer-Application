@@ -19,10 +19,11 @@ import java.util.Map;
 @RequestMapping("api")
 public class FileController {
 
-    // CODE REVIEW [Code Quality]: Prefer constructor injection over field @Autowired.
-    // Constructor injection makes dependencies explicit, eases testing, and avoids null beans.
-    @Autowired
-    private FileService fileService;
+    private final FileService fileService;
+
+    public FileController(FileService fileService) {
+        this.fileService = fileService;
+    }
 
     @GetMapping({"/download/{shortCode}", "/s/{shortCode}"})
     // CODE REVIEW [Security]: No validation/sanitization on shortCode — add @Pattern or length limits

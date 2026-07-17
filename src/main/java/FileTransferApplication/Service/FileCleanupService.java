@@ -2,7 +2,6 @@ package FileTransferApplication.Service;
 
 import FileTransferApplication.Model.FileMetadata;
 import FileTransferApplication.Repository.FileMetadataRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -12,23 +11,20 @@ import java.util.*;
 @Service
 public class FileCleanupService {
 
-    @Autowired
-    private FileMetadataRepo fileMetadataRepo;
+    
+    private final FileMetadataRepo fileMetadataRepo;
+    private final S3Service s3;
 
-    @Autowired
-    private S3Service s3;
+    public FileCleanupService(FileMetadataRepo fileMetadataRepo, S3Service s3) {
+        this.fileMetadataRepo = fileMetadataRepo;
+        this.s3 = s3;
+    }
 
-    // CODE REVIEW [Code Quality]: Hard-coded interval — externalize via @Value for environment-specific tuning.
-    private final long schedulerHours = 1;
-
-    // CODE REVIEW [Reliability]: fixedRate runs every hour regardless of previous run duration — overlapping runs
-    // possible on slow cleanup. Use fixedDelay or @SchedulerLock (ShedLock) for single-instance guarantee.
+    // CODE REVIEW [Reliability]: Use @SchedulerLock (ShedLock) for single-instance guarantee.
     // CODE REVIEW [Scalability]: Runs on every pod in a multi-instance deployment — duplicate S3 deletes and DB writes.
-    @Scheduled(fixedRate = schedulerHours * 60 * 60 * 1000)
+    @Scheduled(fixedDelayString = "${scheduler.fixed-rate}")
     public void deleteExpiredFiles(){
-        // CODE REVIEW [Optimization]: findAll() loads every row into memory — query only expired records
-        // (e.g. findByExpiryDateTimeBefore) and process in batches for large datasets.
-        List<FileMetadata> files= fileMetadataRepo.findAll();
+        List<FileMetadata> files= fileMetadataRepo.findByExpiryDateTimeBefore(LocalDateTime.now());
         // CODE REVIEW [Code Quality]: Replace System.out.println with SLF4J logger at DEBUG level.
         // CODE REVIEW [Observability]: No metrics on files deleted/failed — expose cleanup stats via Micrometer/Actuator.
         System.out.println("DEBUG: Running scheduled cleanup task. Total files in DB: " + files.size());

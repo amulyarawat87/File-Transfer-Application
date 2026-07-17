@@ -1,6 +1,5 @@
 package FileTransferApplication.Service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -21,13 +20,14 @@ import java.time.Duration;
 
 @Service
 public class S3Service {
+        private final S3Client s3Client;
 
-    // CODE REVIEW [Code Quality]: Prefer constructor injection over field @Autowired.
-    @Autowired
-    private S3Client s3Client;
+        private final S3Presigner s3Presigner;
 
-    @Autowired
-    private S3Presigner s3Presigner;
+        public S3Service(S3Client s3Client, S3Presigner s3Presigner) {
+                this.s3Client = s3Client;
+                this.s3Presigner = s3Presigner;
+        }
 
     @Value("${aws.bucket-name}")
     private String bucketName;

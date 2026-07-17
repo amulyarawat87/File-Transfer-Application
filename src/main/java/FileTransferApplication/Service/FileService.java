@@ -4,7 +4,6 @@ import FileTransferApplication.DTO.PresignedUrlResponse;
 import FileTransferApplication.DTO.UploadConfirmationRequest;
 import FileTransferApplication.Model.FileMetadata;
 import FileTransferApplication.Repository.FileMetadataRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -20,19 +19,18 @@ import java.util.UUID;
 
 @Service
 public class FileService {
+    private final DBService db;
+    private final S3Service s3;
+    private final SecurityService secureFile;
+    private final FileMetadataRepo fileMetadataRepo;
 
-    // CODE REVIEW [Code Quality]: Prefer constructor injection; field injection hides dependencies and complicates unit tests.
-    @Autowired
-    private DBService db;
+    public FileService(DBService db, S3Service s3, SecurityService secureFile, FileMetadataRepo fileMetadataRepo){
+        this.db = db;
+        this.s3 = s3;
+        this.secureFile = secureFile;
+        this.fileMetadataRepo = fileMetadataRepo;
+    }
 
-    @Autowired
-    private S3Service s3;
-
-    @Autowired
-    private SecurityService secureFile;
-
-    @Autowired
-    private FileMetadataRepo fileMetadataRepo;
 
     // CODE REVIEW [Code Quality]: Hard-coded magic numbers — externalize via @Value("${file.expiry-hours:24}")
     // so ops can tune TTL without redeploying.
