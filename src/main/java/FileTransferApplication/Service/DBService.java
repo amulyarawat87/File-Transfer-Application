@@ -4,7 +4,7 @@ import FileTransferApplication.Model.FileMetadata;
 import FileTransferApplication.Repository.FileMetadataRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Service
 public class DBService {
@@ -17,7 +17,7 @@ public class DBService {
     // or store only a key reference; never persist raw key material if avoidable.
     // CODE REVIEW [Maintainability]: 7 positional parameters — replace with a FileMetadata builder or record
     // to reduce argument-order bugs when fields are added.
-    public void save(String fileId, String fileName, String fileType, long fileSize, LocalDateTime expiryTime, String encryptionKey, String shortCode) {
+    public void save(String fileId, String fileName, String fileType, long fileSize, Instant expiryTime, String encryptionKey, String shortCode) {
         FileMetadata fileMetadata = new FileMetadata();
 
         fileMetadata.setFileId(fileId);

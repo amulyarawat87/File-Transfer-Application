@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 // CODE REVIEW [Code Quality]: @Data on JPA entities generates equals/hashCode on all fields including mutable state —
@@ -26,9 +26,9 @@ public class FileMetadata {
     private String fileName;
     private String fileType;
     private long fileSize;
-    // CODE REVIEW [Best Practice]: Prefer Instant over LocalDateTime for server-side timestamps to avoid timezone drift.
+    
     @Column(nullable = false)
-    private LocalDateTime expiryDateTime;
+    private Instant expiryDateTime;
 
     // CODE REVIEW [Security]: Raw encryption key persisted in DB — high-value secret; encrypt column or use external KMS.
     @Column(columnDefinition = "TEXT")

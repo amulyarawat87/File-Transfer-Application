@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.*;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -45,7 +45,7 @@ public class FileService {
         FileMetadata file = fileMetadataRepo.findByShortCode(shortCode)
                 .orElse(null);
 
-        if (file == null || file.getExpiryDateTime().isBefore(LocalDateTime.now())) {
+        if (file == null || file.getExpiryDateTime().isBefore(Instant.now())) {
             // CODE REVIEW [API Design]: Expired and not-found both return 404 — clients can't distinguish TTL expiry
             // from invalid short code. Consider 410 Gone for expired files.
             return ResponseEntity.notFound().build();
@@ -94,8 +94,8 @@ public class FileService {
     public String confirmUpload(UploadConfirmationRequest request) {
         // CODE REVIEW [Code Quality]: No null/blank checks on request fields — NPE if fileName or fileId is missing.
         // CODE REVIEW [Code Quality]: lastIndexOf('.') returns -1 for extensionless names → StringIndexOutOfBoundsException.
-        String fileType = request.getFileName().substring(request.getFileName().lastIndexOf('.'));
-        LocalDateTime expiryTime = LocalDateTime.now().plusHours(expiryHours);
+        String fileType = request.fileName().substring(request.fileName().lastIndexOf('.'));
+        Instant expiryTime = Instant.now().plusSeconds(expiryHours * 3600);
         // CODE REVIEW [Concurrency]: Race between existsByShortCode check and save — two threads could get the same code.
         // Use DB unique constraint + retry, or generate codes inside a transaction with SELECT FOR UPDATE.
         String shortCode = generateUniqueShortCode();
@@ -104,7 +104,7 @@ public class FileService {
         // or that Content-Length matches — allows phantom DB records for never-uploaded files.
         // CODE REVIEW [Security]: Duplicate fileId is not rejected; re-confirming could overwrite or throw on unique constraint.
         // CODE REVIEW [Maintainability]: confirmUpload lacks @Transactional — partial failure leaves inconsistent S3/DB state.
-        db.save(request.getFileId(), request.getFileName(), fileType, request.getFileSize(), expiryTime, request.getEncryptionKey(), shortCode);
+        db.save(request.fileId(), request.fileName(), fileType, request.fileSize(), expiryTime, request.encryptionKey(), shortCode);
 
         return shortCode; // return shortCode instead of fileId
     }
