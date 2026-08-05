@@ -2,6 +2,7 @@ package FileTransferApplication.Service;
 
 import FileTransferApplication.Model.FileMetadata;
 import FileTransferApplication.Repository.FileMetadataRepo;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +21,10 @@ public class FileCleanupService {
         this.s3 = s3;
     }
 
-    // CODE REVIEW [Reliability]: Use @SchedulerLock (ShedLock) for single-instance guarantee.
-    // CODE REVIEW [Scalability]: Runs on every pod in a multi-instance deployment — duplicate S3 deletes and DB writes.
     @Scheduled(fixedDelayString = "${scheduler.fixed-rate}")
+    @SchedulerLock(name = "deleteExpiredFiles", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void deleteExpiredFiles(){
         List<FileMetadata> files= fileMetadataRepo.findByExpiryDateTimeBefore(Instant.now());
-        // CODE REVIEW [Code Quality]: Replace System.out.println with SLF4J logger at DEBUG level.
         // CODE REVIEW [Observability]: No metrics on files deleted/failed — expose cleanup stats via Micrometer/Actuator.
         System.out.println("DEBUG: Running scheduled cleanup task. Total files in DB: " + files.size());
 
