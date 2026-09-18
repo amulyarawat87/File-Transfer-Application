@@ -1,5 +1,7 @@
 .git
 .idea
 .vscode
-target/*
-!target/*.jar
+target/
+.env
+.env.dev
+*.log

@@ -1,6 +1,5 @@
 package FileTransferApplication.Service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -21,16 +20,21 @@ import java.time.Duration;
 
 @Service
 public class S3Service {
+        private final S3Client s3Client;
 
-    @Autowired
-    private S3Client s3Client;
+        private final S3Presigner s3Presigner;
 
-    @Autowired
-    private S3Presigner s3Presigner;
+        public S3Service(S3Client s3Client, S3Presigner s3Presigner) {
+                this.s3Client = s3Client;
+                this.s3Presigner = s3Presigner;
+        }
 
     @Value("${aws.bucket-name}")
     private String bucketName;
 
+    // CODE REVIEW [Reliability]: S3Client is synchronous — under load, blocking I/O ties up servlet threads.
+    // Consider async client or offloading to a thread pool for high-throughput scenarios.
+    // CODE REVIEW [Code Quality]: Method always returns true — return void or propagate S3 exceptions instead.
     public boolean uploadFile(byte[] file, String key, String contentType) throws IOException {
         s3Client.putObject(
                 PutObjectRequest.builder()
@@ -45,6 +49,8 @@ public class S3Service {
     }
 
     // Download
+    // CODE REVIEW [Code Quality]: No error handling — missing S3 keys throw unhandled SdkException to the caller.
+    // CODE REVIEW [Optimization]: getObjectAsBytes loads the full object into memory; use streaming for large files.
     public byte[] downloadFile(String key) {
         ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(
                 GetObjectRequest.builder()
@@ -56,6 +62,8 @@ public class S3Service {
         return response.asByteArray();
     }
     // Delete
+    // CODE REVIEW [Code Quality]: Swallows no errors but also doesn't verify deletion succeeded or log failures.
+    // CODE REVIEW [Reliability]: S3 deleteObject is idempotent but silent — no check for NoSuchKey vs actual failures.
     public void deleteFile(String key){
         s3Client.deleteObject(
                 DeleteObjectRequest.builder()
@@ -66,6 +74,8 @@ public class S3Service {
     }
 
     // Generate presigned PUT (upload) URL
+    // CODE REVIEW [Security]: No content-type or max-size constraint on presigned PUT — clients can upload
+    // arbitrary content types/sizes. Add conditions (Content-Type, content-length-range) to the presign request.
     public String generatePresignedPutUrl(String key, Duration duration) {
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(duration)
@@ -76,10 +86,13 @@ public class S3Service {
                 .build();
 
         PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+        // CODE REVIEW [Maintainability]: S3Presigner and S3Client are never closed — register @PreDestroy shutdown hooks
+        // to avoid resource leaks on hot redeploys.
         return presignedRequest.url().toString();
     }
 
     // Generate presigned GET (download) URL
+    // CODE REVIEW [Code Quality]: Dead code — method is never called; remove or use for download redirect optimization.
     public String generatePresignedGetUrl(String key, Duration duration) {
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                 .signatureDuration(duration)
