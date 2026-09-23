@@ -1,10 +1,12 @@
 package FileTransferApplication.Service;
 
-import FileTransferApplication.Model.FileMetadata;
-import FileTransferApplication.Repository.FileMetadataRepo;
+import java.time.Instant;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.time.Instant;
+
+import FileTransferApplication.Model.FileMetadata;
+import FileTransferApplication.Repository.FileMetadataRepo;
 
 @Service
 public class DBService {
@@ -35,9 +37,4 @@ public class DBService {
         System.out.println("File Saved Successfully - ShortCode: " + shortCode + ", FileId: " + fileId);
     }
 
-    // CODE REVIEW [Code Quality]: Generic RuntimeException leaks no HTTP-friendly error; use a custom NotFoundException
-    // handled by @ControllerAdvice. Also appears unused — verify or remove.
-    public FileMetadata get(String id) {
-        return fileMetadataRepo.findById(id).orElseThrow(() -> new RuntimeException("File not found"));
-    }
 }

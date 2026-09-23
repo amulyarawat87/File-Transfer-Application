@@ -1,22 +1,19 @@
 package FileTransferApplication.Service;
 
+import java.time.Duration;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import software.amazon.awssdk.core.ResponseBytes;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-
-import java.io.IOException;
-import java.time.Duration;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @Service
 public class S3Service {
@@ -32,22 +29,25 @@ public class S3Service {
     @Value("${aws.bucket-name}")
     private String bucketName;
 
-    // CODE REVIEW [Reliability]: S3Client is synchronous — under load, blocking I/O ties up servlet threads.
-    // Consider async client or offloading to a thread pool for high-throughput scenarios.
-    // CODE REVIEW [Code Quality]: Method always returns true — return void or propagate S3 exceptions instead.
-    public boolean uploadFile(byte[] file, String key, String contentType) throws IOException {
-        s3Client.putObject(
-                PutObjectRequest.builder()
+    // Generate presigned PUT (upload) URL
+    // CODE REVIEW [Security]: No content-type or max-size constraint on presigned PUT — clients can upload
+    // arbitrary content types/sizes. Add conditions (Content-Type, content-length-range) to the presign request.
+    public String generatePresignedPutUrl(String key, Duration duration) {
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(duration)
+                .putObjectRequest(PutObjectRequest.builder()
                         .bucket(bucketName)
                         .key(key)
-                        .contentType(contentType == null || contentType.isBlank() ? "application/octet-stream" : contentType)
-                        .build(),
-                RequestBody.fromBytes(file)
-        );
+                        .build())
+                .build();
 
-        return true;
+        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+        // CODE REVIEW [Maintainability]: S3Presigner and S3Client are never closed — register @PreDestroy shutdown hooks
+        // to avoid resource leaks on hot redeploys.
+        return presignedRequest.url().toString();
     }
 
+    
     // Download
     // CODE REVIEW [Code Quality]: No error handling — missing S3 keys throw unhandled SdkException to the caller.
     // CODE REVIEW [Optimization]: getObjectAsBytes loads the full object into memory; use streaming for large files.
@@ -72,37 +72,5 @@ public class S3Service {
                         .build()
         );
     }
-
-    // Generate presigned PUT (upload) URL
-    // CODE REVIEW [Security]: No content-type or max-size constraint on presigned PUT — clients can upload
-    // arbitrary content types/sizes. Add conditions (Content-Type, content-length-range) to the presign request.
-    public String generatePresignedPutUrl(String key, Duration duration) {
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(duration)
-                .putObjectRequest(PutObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(key)
-                        .build())
-                .build();
-
-        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
-        // CODE REVIEW [Maintainability]: S3Presigner and S3Client are never closed — register @PreDestroy shutdown hooks
-        // to avoid resource leaks on hot redeploys.
-        return presignedRequest.url().toString();
-    }
-
-    // Generate presigned GET (download) URL
-    // CODE REVIEW [Code Quality]: Dead code — method is never called; remove or use for download redirect optimization.
-    public String generatePresignedGetUrl(String key, Duration duration) {
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(duration)
-                .getObjectRequest(GetObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(key)
-                        .build())
-                .build();
-
-        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
-        return presignedRequest.url().toString();
-    }
+    
 }

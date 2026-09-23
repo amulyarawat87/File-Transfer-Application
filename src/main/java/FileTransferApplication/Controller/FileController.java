@@ -1,14 +1,21 @@
 package FileTransferApplication.Controller;
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import FileTransferApplication.DTO.FileDownloadResponse;
 import FileTransferApplication.DTO.PresignedUrlResponse;
 import FileTransferApplication.DTO.UploadConfirmationRequest;
 import FileTransferApplication.Service.FileService;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
-import java.util.Map;
 
 @RestController
 // CODE REVIEW [Security]: @CrossOrigin with no origins allows any site to call this API.
@@ -30,8 +37,13 @@ public class FileController {
     // CODE REVIEW [Security]: No auth or rate limiting on download; anyone with a short code can fetch files.
     // CODE REVIEW [Error Handling]: Declares throws IOException but service may throw unchecked S3/crypto exceptions —
     // these won't map to a proper HTTP status without @ControllerAdvice.
-    public ResponseEntity<Resource> downloadFile(@PathVariable String shortCode) throws IOException {
-        return fileService.downloadService(shortCode);
+    public ResponseEntity<FileDownloadResponse> downloadFile(@PathVariable String shortCode) throws IOException {
+        FileDownloadResponse response = fileService.downloadService(shortCode);
+        if (response == null) {
+            // CODE REVIEW [API Design]: Expired and not-found both return 404 — clients can't distinguish TTL expiry from invalid short code. Consider 410 Gone for expired files.
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(response);
     }
 
     // CODE REVIEW [Security]: Presigned URL endpoint is unauthenticated — attackers can exhaust S3 quota

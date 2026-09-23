@@ -1,33 +1,31 @@
 package FileTransferApplication.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+
+import FileTransferApplication.DTO.FileDownloadResponse;
 import FileTransferApplication.DTO.PresignedUrlResponse;
 import FileTransferApplication.DTO.UploadConfirmationRequest;
 import FileTransferApplication.Model.FileMetadata;
 import FileTransferApplication.Repository.FileMetadataRepo;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.nio.file.*;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
 
 @Service
 public class FileService {
     private final DBService db;
     private final S3Service s3;
-    private final SecurityService secureFile;
     private final FileMetadataRepo fileMetadataRepo;
 
-    public FileService(DBService db, S3Service s3, SecurityService secureFile, FileMetadataRepo fileMetadataRepo){
+    public FileService(DBService db, S3Service s3, FileMetadataRepo fileMetadataRepo){
         this.db = db;
         this.s3 = s3;
-        this.secureFile = secureFile;
         this.fileMetadataRepo = fileMetadataRepo;
     }
 
@@ -39,7 +37,7 @@ public class FileService {
 
     // CODE REVIEW [Architecture]: Service returns ResponseEntity — HTTP concerns belong in the controller layer;
     // keep FileService returning Resource/byte[] and let the controller build headers/status.
-    public ResponseEntity<Resource> downloadService(String shortCode) throws IOException {
+    public FileDownloadResponse downloadService(String shortCode) throws IOException {
 
         // Lookup by shortCode instead of fileId
         FileMetadata file = fileMetadataRepo.findByShortCode(shortCode)
@@ -48,7 +46,7 @@ public class FileService {
         if (file == null || file.getExpiryDateTime().isBefore(Instant.now())) {
             // CODE REVIEW [API Design]: Expired and not-found both return 404 — clients can't distinguish TTL expiry
             // from invalid short code. Consider 410 Gone for expired files.
-            return ResponseEntity.notFound().build();
+            return null;
         }
 
         // CODE REVIEW [Code Quality]: probeContentType uses filename only, not file bytes — unreliable MIME detection.
@@ -65,21 +63,17 @@ public class FileService {
         // Download from S3 using internal fileId
         byte[] s3FileData = s3.downloadFile(file.getFileId());
 
-        byte[] decryptedFile = (file.getEncryptionKey() != null && !file.getEncryptionKey().isBlank())
-                ? secureFile.decryptFile(s3FileData, file.getEncryptionKey())
-                : secureFile.decryptFile(s3FileData);
-
         // CODE REVIEW [Reliability]: No check that s3FileData.length matches expected fileSize from metadata —
         // corrupted/partial uploads would still be served to the client.
-        ByteArrayResource resource = new ByteArrayResource(decryptedFile);
+        ByteArrayResource resource = new ByteArrayResource(s3FileData);
 
         // CODE REVIEW [Security]: Unsanitized fileName in Content-Disposition enables header injection
         // (e.g. filename with \r\n). Use ContentDisposition builder or strip/encode special characters.
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + file.getFileName() + "\"")
-                .body(resource);
+        return new FileDownloadResponse(
+                resource,
+                file.getFileName(),
+                MediaType.parseMediaType(contentType)
+        );
     }
 
     public PresignedUrlResponse getPresignedUploadUrl() {
