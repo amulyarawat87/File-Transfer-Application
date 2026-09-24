@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.UUID;
 
 import org.springframework.core.io.ByteArrayResource;
@@ -65,14 +66,17 @@ public class FileService {
 
         // CODE REVIEW [Reliability]: No check that s3FileData.length matches expected fileSize from metadata —
         // corrupted/partial uploads would still be served to the client.
-        ByteArrayResource resource = new ByteArrayResource(s3FileData);
+        ByteArrayResource byteArrayResource = new ByteArrayResource(s3FileData);
 
+        String resource = Base64.getEncoder()
+                .encodeToString(byteArrayResource.getByteArray());
         // CODE REVIEW [Security]: Unsanitized fileName in Content-Disposition enables header injection
         // (e.g. filename with \r\n). Use ContentDisposition builder or strip/encode special characters.
         return new FileDownloadResponse(
                 resource,
                 file.getFileName(),
-                MediaType.parseMediaType(contentType)
+                MediaType.parseMediaType(contentType),
+                file.getEncryptionKey()
         );
     }
 
