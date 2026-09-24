@@ -28,4 +28,4 @@ release.properties
 .env.local
 .env.*.local
 *.log
-application.properties
+src/main/resources/application.properties
