@@ -12,8 +12,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.*;
 
 @Service
 public class S3Service {
@@ -21,9 +20,9 @@ public class S3Service {
 
         private final S3Presigner s3Presigner;
 
-        public S3Service(S3Client s3Client, S3Presigner s3Presigner) {
-                this.s3Client = s3Client;
-                this.s3Presigner = s3Presigner;
+        public S3Service() {
+                this.s3Client = S3Client.builder().build();;
+                this.s3Presigner = S3Presigner.builder().build();
         }
 
     @Value("${aws.bucket-name}")
@@ -42,8 +41,6 @@ public class S3Service {
                 .build();
 
         PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
-        // CODE REVIEW [Maintainability]: S3Presigner and S3Client are never closed — register @PreDestroy shutdown hooks
-        // to avoid resource leaks on hot redeploys.
         return presignedRequest.url().toString();
     }
 

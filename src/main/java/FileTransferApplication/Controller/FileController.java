@@ -3,6 +3,7 @@ package FileTransferApplication.Controller;
 import java.io.IOException;
 import java.util.Map;
 
+import FileTransferApplication.Service.UploadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,30 +14,40 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import FileTransferApplication.DTO.FileDownloadResponse;
-import FileTransferApplication.DTO.PresignedUrlResponse;
+import FileTransferApplication.DTO.UploadResponse;
 import FileTransferApplication.DTO.UploadConfirmationRequest;
-import FileTransferApplication.Service.FileService;
 
 @RestController
-// CODE REVIEW [Security]: @CrossOrigin with no origins allows any site to call this API.
-// Restrict to known frontend origins (e.g. origins = "https://your-app.com") in production.
-@CrossOrigin(exposedHeaders = "Content-Disposition")
-// CODE REVIEW [API Design]: Missing leading slash and version prefix — use "/api/v1" for clearer routing and future versioning.
-@RequestMapping("api")
+@CrossOrigin(origins = "http://localhost:8080/api/v1")
+@RequestMapping("api/v1")
 public class FileController {
 
-    private final FileService fileService;
+    private final UploadService uploadService;
 
-    public FileController(FileService fileService) {
-        this.fileService = fileService;
+    public FileController() {
+        this.uploadService = new UploadService();
     }
 
+    @GetMapping("/upload")
+    public ResponseEntity<?> uploadFile() {
+        try{
+            UploadResponse response = uploadService.uploadFile();
+            return ResponseEntity.ok(response);
+        }
+        catch (Exception e){
+            return ResponseEntity.status(500).body("Upload Service Temporarily Unavailable. Try after some time.");
+        }
+
+    }
+
+    @PostMapping("/upload/confirm")
+    public ResponseEntity<Map<String, String>> saveFileMetadataToDB(@RequestBody UploadConfirmationRequest request) {
+        String shortCode = uploadService.saveFileMetadataToDB(request);
+        return ResponseEntity.ok(Map.of("shortCode", shortCode));
+    }
+
+
     @GetMapping({"/download/{shortCode}", "/s/{shortCode}"})
-    // CODE REVIEW [Security]: No validation/sanitization on shortCode — add @Pattern or length limits
-    // to block malformed input and reduce brute-force enumeration of short codes.
-    // CODE REVIEW [Security]: No auth or rate limiting on download; anyone with a short code can fetch files.
-    // CODE REVIEW [Error Handling]: Declares throws IOException but service may throw unchecked S3/crypto exceptions —
-    // these won't map to a proper HTTP status without @ControllerAdvice.
     public ResponseEntity<FileDownloadResponse> downloadFile(@PathVariable String shortCode) throws IOException {
         FileDownloadResponse response = fileService.downloadService(shortCode);
         if (response == null) {
@@ -46,23 +57,4 @@ public class FileController {
         return ResponseEntity.ok(response);
     }
 
-    // CODE REVIEW [Security]: Presigned URL endpoint is unauthenticated — attackers can exhaust S3 quota
-    // or spam metadata records. Add rate limiting and/or API key validation.
-    // CODE REVIEW [API Design]: GET with no query params — consider accepting fileName/contentType upfront
-    // so presigned URL can enforce upload constraints server-side.
-    @GetMapping("/upload/presigned-url")
-    public ResponseEntity<PresignedUrlResponse> getPresignedUploadUrl() {
-        PresignedUrlResponse response = fileService.getPresignedUploadUrl();
-        return ResponseEntity.ok(response);
-    }
-
-    // CODE REVIEW [Code Quality]: Missing @Valid on request body — invalid/null fields reach the service layer.
-    // CODE REVIEW [Security]: No verification that the caller actually uploaded to S3 before confirming.
-    // CODE REVIEW [API Design]: Returns 200 with Map — use a typed response DTO and return 201 Created for new resources.
-    // CODE REVIEW [Reliability]: No idempotency key — duplicate POST /confirm with same fileId can create multiple short codes.
-    @PostMapping("/upload/confirm")
-    public ResponseEntity<Map<String, String>> confirmUpload(@RequestBody UploadConfirmationRequest request) {
-        String shortCode = fileService.confirmUpload(request);
-        return ResponseEntity.ok(Map.of("shortCode", shortCode)); // changed from fileId to shortCode
-    }
 }

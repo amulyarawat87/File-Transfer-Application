@@ -3,7 +3,7 @@ package FileTransferApplication.DTO;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 /**
- * @param resource CODE REVIEW [Security]: fileId is returned to client before upload is confirmed — ensure it cannot be reused to hijack another user's upload by validating ownership on confirmUpload.
+ * @param resource
  */
 public record FileDownloadResponse(String resource, String fileName, MediaType contentType, String encryptionKey) {
 }
