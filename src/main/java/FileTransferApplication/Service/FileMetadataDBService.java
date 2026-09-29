@@ -20,4 +20,8 @@ public class FileMetadataDBService {
     public boolean checkIfShortCodeExists(String shortCode){
         return fileMetadataRepo.existsByShortCode(shortCode);
     }
+    public FileMetadata fetchFileDataByShortCode(String shortCode){
+        return fileMetadataRepo.findByShortCode(shortCode)
+                .orElse(null);
+    }
 }

@@ -2,7 +2,7 @@ package FileTransferApplication.DTO;
 
 
 /**
- * @param fileId CODE REVIEW [Security]: fileId is returned to client before upload is confirmed — ensure it cannot be reused to hijack another user's upload by validating ownership on confirmUpload.
+ * @param presignedPutUrl
  */
-public record UploadResponse(String fileId, String presignedUrl) {
+public record UploadResponse(String fileId, String presignedPutUrl) {
 }

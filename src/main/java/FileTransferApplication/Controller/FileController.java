@@ -1,31 +1,28 @@
 package FileTransferApplication.Controller;
 
-import java.io.IOException;
 import java.util.Map;
 
-import FileTransferApplication.Service.UploadService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import FileTransferApplication.DTO.FileDownloadResponse;
+import FileTransferApplication.Service.DownloadService;
+import FileTransferApplication.Service.UploadService;
+
 import FileTransferApplication.DTO.UploadResponse;
 import FileTransferApplication.DTO.UploadConfirmationRequest;
+import FileTransferApplication.DTO.DownloadResponse;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:8080/api/v1")
+@CrossOrigin(origins = "http://localhost:3000/")
 @RequestMapping("api/v1")
 public class FileController {
 
     private final UploadService uploadService;
+    private final DownloadService downloadService;
 
-    public FileController() {
-        this.uploadService = new UploadService();
+    public FileController(UploadService uploadService, DownloadService downloadService) {
+        this.uploadService = uploadService;
+        this.downloadService = downloadService;
     }
 
     @GetMapping("/upload")
@@ -48,13 +45,14 @@ public class FileController {
 
 
     @GetMapping({"/download/{shortCode}", "/s/{shortCode}"})
-    public ResponseEntity<FileDownloadResponse> downloadFile(@PathVariable String shortCode) throws IOException {
-        FileDownloadResponse response = fileService.downloadService(shortCode);
-        if (response == null) {
-            // CODE REVIEW [API Design]: Expired and not-found both return 404 — clients can't distinguish TTL expiry from invalid short code. Consider 410 Gone for expired files.
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(response);
-    }
+        public ResponseEntity<?> downloadFile(@PathVariable String shortCode) {
+            try{
+                DownloadResponse response = downloadService.downloadFile(shortCode);
+                return ResponseEntity.ok(response);
+            }
+            catch (Exception e){
+                return ResponseEntity.status(500).body("Upload Service Temporarily Unavailable. Try after some time.");
+            }
 
-}
+        }
+    }
