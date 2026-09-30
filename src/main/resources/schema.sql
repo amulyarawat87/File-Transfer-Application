@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS file_metadata (
     file_name VARCHAR(255),
     file_type VARCHAR(255),
     file_size BIGINT NOT NULL,
-    expiry_date_time TIMESTAMP(3) NOT NULL,
+    expiry_time TIMESTAMP(3) NOT NULL,
     encryption_key TEXT,
     PRIMARY KEY (file_id),
     CONSTRAINT uk_file_metadata_short_code UNIQUE (short_code)
