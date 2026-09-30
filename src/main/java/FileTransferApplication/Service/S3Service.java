@@ -2,7 +2,6 @@ package FileTransferApplication.Service;
 
 import java.time.Duration;
 
-import FileTransferApplication.Config.S3Config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +10,10 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.*;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @Service
 public class S3Service {
@@ -44,8 +46,6 @@ public class S3Service {
 
     
     // Download
-    // CODE REVIEW [Code Quality]: No error handling — missing S3 keys throw unhandled SdkException to the caller.
-    // CODE REVIEW [Optimization]: getObjectAsBytes loads the full object into memory; use streaming for large files.
     public String generatePresignedGetUrl(String key, Duration duration) {
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                 .signatureDuration(duration)
@@ -59,8 +59,6 @@ public class S3Service {
         return presigned.url().toString();
     }
     // Delete
-    // CODE REVIEW [Code Quality]: Swallows no errors but also doesn't verify deletion succeeded or log failures.
-    // CODE REVIEW [Reliability]: S3 deleteObject is idempotent but silent — no check for NoSuchKey vs actual failures.
     public void deleteFile(String key){
         s3Client.deleteObject(
                 DeleteObjectRequest.builder()
